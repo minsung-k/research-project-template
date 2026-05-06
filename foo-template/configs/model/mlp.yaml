@@ -1,9 +1,0 @@
-# configs/model/mlp.yaml
-# `_target_` is Hydra's instantiation pattern: it tells Hydra which class to construct.
-# Replace with your actual model class path.
-
-_target_: foo.models.mlp.MLP
-in_dim: 2
-hidden_dims: [128, 128, 128]
-out_dim: 1
-activation: gelu
