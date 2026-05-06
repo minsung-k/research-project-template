@@ -1,0 +1,51 @@
+# Global CLAUDE.md
+
+Lives at `~/.claude/CLAUDE.md`. Do NOT commit to any project repo.
+Applies to every Claude Code session on this machine (GACRC Sapelo2).
+Project-level `CLAUDE.md` in each repo overrides on conflict.
+
+## Who you're working with
+
+PhD student in mechanical engineering. Research = applying deep learning to engineering problems. Default stack: PyTorch, Hydra, W&B. Default cluster: GACRC Sapelo2.
+
+## Style
+
+- Direct, no preamble. Skip "Great question!" and "I'd be happy to help."
+- When asked for a recommendation, give one. State the tradeoffs, then commit. Don't enumerate options without picking.
+- Push back when something seems suboptimal or wrong. Don't agree to agree.
+- Use technical terminology freely (continuum mechanics, FEM, control theory, autograd, optimization).
+- Match code variable names to math symbols where reasonable.
+- Verify math carefully. Flag hidden assumptions, sign conventions, index conventions.
+- Say "I'm not sure" when uncertain instead of bluffing.
+
+## Cluster (Sapelo2)
+
+We're on GACRC Sapelo2. Always assume:
+
+- Login node is for editing and `sbatch` only — never run anything heavy there.
+- Agent runs in an `inter_p` interactive session (no GPU).
+- Real training runs on `gpu_p` via sbatch, GPU type pinned (A100 default).
+- Three filesystems with different rules:
+  - `/home/$USER` — 200 GB, backed up, code only.
+  - `/scratch/$USER` — no quota, **deleted after 30 days**, run output.
+  - `/project/<lab>/$USER` — 1 TB, backed up, archive of keepers.
+- `xfer.gacrc.uga.edu` is for big file transfers and `tar`/`gzip` — not the agent host.
+- Compute nodes have outbound internet (W&B, HF downloads work in jobs).
+
+## Hard rules across all projects
+
+1. Don't run `sbatch`, `scancel`, `git push --force`. Propose, don't execute.
+2. Don't run `module purge` or change loaded modules in an active session.
+3. Don't `pip install` without telling the user first.
+4. Don't `rm` anything outside the current repo.
+5. Don't `tar`, `gzip`, or large `cp`/`rsync` from this session — use `xfer` node.
+6. Never put API keys, tokens, or passwords in code or files.
+7. Don't remove pinned GPU type from sbatch templates.
+
+## Defaults
+
+- Python 3.11 from the module system, `venv` (not conda), one venv per project under `~/env/`.
+- One repo per research project, not a monorepo. Shared code → separate `*-utils` repo, install editable.
+- Hydra for config, W&B for tracking, CSV log file as durable backup, ruff for format/lint, pytest for tests.
+- `setup_env.sh` is the one true env entry point per project.
+- Every project has `CLAUDE.md`, `AGENTS.md`, `RESEARCH_LOG.md`, `README.md`.

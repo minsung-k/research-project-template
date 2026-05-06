@@ -1,0 +1,8 @@
+# configs/dataset/cylinder.yaml
+# Example dataset config. Adjust to your real data layout.
+
+_target_: foo.data.cylinder.CylinderDataset
+data_dir: ${oc.env:FOO_DATA_DIR}/cylinder
+split: train
+batch_size: 64
+num_workers: 4
