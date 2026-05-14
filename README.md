@@ -37,7 +37,8 @@ scripts/        Thin entry points: train.py, sweep.py, evaluate.py
 slurm/          sbatch templates for Sapelo2 gpu_p
 tests/          pytest, no GPU needed
 notebooks/      Exploration only — never the source of a result
-.agent/         Claude Code / Codex skills, subagents, prompt fragments
+notes/          Research-process phase artifacts (problem.md, litreview.md, …)
+.agent/         Claude Code / Codex skills, subagents, prompts, HANDOFF.md
 ```
 
 ## Conventions
@@ -50,6 +51,8 @@ notebooks/      Exploration only — never the source of a result
 
 ## See also
 
-- `CLAUDE.md` / `AGENTS.md` — agent instructions.
+- `CLAUDE.md` / `AGENTS.md` — agent instructions (methodology, hard rules, working pattern).
+- `.agent/IMPLEMENTATION.md` — cluster paths, runtime rules, code conventions.
 - `RESEARCH_LOG.md` — running journal of what was tried and what's next.
+- `.agent/HANDOFF.md` — live state of in-flight work; outgoing agent overwrites.
 - `slurm/README.md` — partition/template details.

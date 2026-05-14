@@ -5,81 +5,43 @@ Companion file `AGENTS.md` (for Codex) points at this one.
 
 ---
 
+## Research methodology
+
+Phase definitions, rules, and prompts live in `~/projects/research-process/`
+(`PHASES.md`, `prompts/`). Outputs go in `notes/` here.
+
+Project-specific operationalization on top of `PHASES.md`:
+- Phase 0 (direction survey, optional) → typically Claude-only; output
+  `notes/phase0_directions.md`. Use when the framing space is wide and you
+  want a menu of viable designs before committing.
+- Phase 1 (framing) → single-agent. Output `notes/problem.md` +
+  `notes/phase1_commitments.md`.
+- Phases 2 / 3 / 6 dual-independent → name files `_claude.md` / `_codex.md`,
+  user reconciles into the canonical artifact.
+- Phase 4 single-driver + reviewer → driver writes `notes/method_v1.md`;
+  the other agent writes `notes/method_v1_review.md` (a review, not a
+  counter-spec).
+- Phase 5 (implementation) → Claude primary coder, Codex reviews diffs.
+  Cluster paths, runtime hard rules, run commands, and code conventions
+  live in `.agent/IMPLEMENTATION.md` — read it whenever you write or run
+  code, propose sbatch, do EDA on disk data, or install dependencies.
+
 ## What this project is
 
 <!-- EDIT: 3–5 sentences. What's the research question? What's the approach? What's the success criterion? -->
 
 This project applies deep learning to <PROBLEM DOMAIN>. The core question is <QUESTION>. We're testing <APPROACH>. Success looks like <METRIC / DELIVERABLE>.
 
-## Where we run
+## Universal hard rules — do not violate
 
-We are on **GACRC Sapelo2** (UGA HPC). The agent runs in an OnDemand VS Code session on the `inter_p` partition. Training jobs are submitted to `gpu_p` via sbatch.
+These apply in every phase. Phase-5-specific rules (sbatch, modules, pip,
+tar, gpu pinning) live in `.agent/IMPLEMENTATION.md`.
 
-| Path                              | Purpose                       | Notes                          |
-|-----------------------------------|-------------------------------|--------------------------------|
-| `/home/$USER/projects/foo/`       | this repo, code, configs      | 200 GB quota, backed up        |
-| `/scratch/$USER/runs/foo/`        | run outputs, checkpoints      | no quota, auto-deleted at 30 d |
-| `/scratch/$USER/data/foo/`        | active datasets               | same as above                  |
-| `/project/<lab>/$USER/foo/`       | archived results worth keeping | 1 TB, backed up                |
-
-Code reads these via `FOO_REPO`, `FOO_RUNS_DIR`, `FOO_DATA_DIR`, `FOO_ARCHIVE_DIR` (set by `setup_env.sh`). Never hardcode paths.
-
-## Hard rules — do not violate
-
-1. **Never run `sbatch`, `scancel`, `git push --force`.** Write the command, print it, let the user run it.
-2. **Never run `module purge` or change loaded modules** mid-session — silently breaks the active venv.
-3. **Never `pip install` without saying so first.** All deps go through `pyproject.toml`; after editing it, run `pip install -e .` then `pip freeze > requirements.lock`.
-4. **Never `rm` anything outside this repo.** `/scratch` and `/project` paths are never to be deleted by the agent.
-5. **Never run `tar`, `gzip`, or large `cp`/`rsync` from this session.** Those operations belong on `xfer.gacrc.uga.edu`. Propose the command for the user to run there.
-6. **Never put API keys, tokens, or passwords in code, configs, or this repo.** Read them from env vars (`os.environ`). If a key seems missing, ask the user.
-7. **Do not remove `--gres=gpu:A100:1`** (or whatever GPU type the project has pinned) from sbatch templates. Mixed GPU types break reproducibility.
-8. **Do not edit `RESEARCH_LOG.md` except to read it.** That's the user's journal.
-
-## What the agent should do freely
-
-- Read any file in the repo.
-- Edit code in `src/foo/`, `scripts/`, `tests/`, `configs/`.
-- Run `pytest`, `ruff`, short Python sanity checks (small tensors, CPU).
-- Inspect run output dirs on `/scratch` (read-only).
-- Read `nvidia-smi`, `squeue -u $USER`, `sacct -u $USER`, `seff <jobid>`.
-- Propose sbatch scripts and the exact `sbatch` command to run them.
-
-## How to run things
-
-```bash
-# activate env (always)
-source setup_env.sh
-
-# tests
-pytest tests/ -x
-
-# quick local train (CPU)
-python scripts/train.py trainer.max_epochs=1 trainer.use_wandb=false
-
-# real training run (submit, don't run inline)
-sbatch slurm/train.sbatch model=mlp seed=0
-
-# parallel sweep — generates configs, prints sbatch command
-python scripts/sweep.py configs/sweep/<spec>.yaml
-```
-
-Hydra notes:
-- Override at CLI: `python scripts/train.py model=fno optimizer.lr=1e-4 seed=0`
-- Multirun: `python scripts/train.py -m seed=0,1,2 model=mlp,fno`
-- Named experiments: `python scripts/train.py +experiment=ablation_v1`
-- Run output dir is `${FOO_RUNS_DIR}/${exp_name}/<date>_<user>_<exp>_seed<n>/`.
-
-## Code conventions
-
-- **PyTorch** is the default. Device handling: `device = "cuda" if torch.cuda.is_available() else "cpu"` — never hardcode `"cuda"`.
-- **Variable names match math** where reasonable: `x`, `y`, `u` for vectors/fields; `A`, `K` for matrices/operators; uppercase for tensors of rank ≥ 2; suffix `_b` for batched.
-- **New models** → `src/foo/models/<name>.py`, register in `models/__init__.py`.
-- **New losses** → `src/foo/losses/<name>.py`, register in `losses/__init__.py`.
-- **New datasets** → `src/foo/data/<name>.py`. The class takes `data_dir: str` from config, not from a hardcoded path.
-- **Tests required** for any function doing non-trivial math (custom autograd, PDE residuals, FEM ops, numerical integration).
-- **Type hints** on public functions. Don't bother on tight inner loops.
-- **Logging**: `logging.getLogger(__name__)`, not `print`.
-- Format: ruff handles it. Run `ruff format .` and `ruff check . --fix` before committing.
+1. **Never run `git push --force`.** Write the command, let the user run it.
+2. **Never `rm` anything outside this repo.** `/scratch` and `/project` paths are never to be deleted by the agent.
+3. **Never put API keys, tokens, or passwords in code, configs, or this repo.** Read them from env vars (`os.environ`). If a key seems missing, ask the user.
+4. **Do not edit `RESEARCH_LOG.md` except to read it.** That's the user's journal.
+5. **Do not read `notes/dryrun_*/` directories.** These are frozen archives of prior research-process cycles, kept for the user's reference. Reading them anchors current work to superseded framings and defeats the point of the restart. The user does any cross-cycle comparison manually; agents do not.
 
 ## Math + derivations
 
@@ -90,22 +52,46 @@ When the user asks for a derivation or to verify math:
 - If you're unsure, say "I'm not sure" — don't guess.
 - For load-bearing derivations (a new loss, a custom autograd, a numerical scheme), suggest the user run the same prompt past the secondary agent (Codex) for an independent derivation. Disagreement is a real signal.
 
+## Coding posture
+
+**Simplicity first.** Minimum code that solves the problem. No speculative features, no abstractions for single-use code, no flexibility that wasn't asked for, no error handling for impossible scenarios. If 200 lines could be 50, rewrite it. Senior-engineer test: would they call this overcomplicated? If yes, simplify.
+
+**Surgical changes.** Touch only what the task requires. Don't "improve" adjacent code, comments, or formatting. Don't refactor working code or rewrite to your preferred style — match what's there. Remove only the imports / variables / functions that *your* changes orphaned; leave pre-existing dead code alone (mention it, don't delete it). Test: every changed line should trace directly to the user's request.
+
+**Goal-driven execution.** Convert the task into verifiable goals before starting. For multi-step work, state a plan with a verify step per item:
+```
+1. [step] → verify: [check]
+2. [step] → verify: [check]
+```
+For research code, "verify" is usually a sanity check (loss decreases, shapes match, one batch trains end-to-end, gradients are finite) rather than a unit test. Weak criteria ("make it work") cost a reorientation round-trip; strong criteria let the loop close without checking in.
+
 ## Working pattern
 
 Every session, at the start:
 1. Read this file.
 2. Read `RESEARCH_LOG.md` (most recent entries) to learn the current state.
-3. Run `git status` and `git log -5 --oneline` to see what changed since last session.
-4. Ask the user what to focus on.
+3. Read `.agent/HANDOFF.md` to learn the in-flight task.
+4. Run `git status` and `git log -5 --oneline` to see what changed since last session.
+5. Ask the user what to focus on.
 
-Every meaningful change:
-1. Write tests first when feasible.
-2. Run `pytest tests/ -x` after editing.
-3. Show diffs before applying when changes touch >1 file or >50 lines.
-4. Don't commit. Don't push. Tell the user when something is ready to commit and what the message should be.
+## Handoff between agents
+
+The user switches between Claude Code and Codex frequently when usage limits are hit. Limits often hit without warning, so **keep `.agent/HANDOFF.md` current proactively** — update it after each meaningful step (file written, decision made, next-step identified), not only at user-warned switch time.
+
+- `.agent/HANDOFF.md` content: current task, status (done / in-progress / blocked), where to resume (file paths, line numbers, or specific `notes/` artifacts), open questions for the user, files touched this session.
+- HANDOFF.md is overwritten on each switch — not appended.
+- Lasting lessons go in `RESEARCH_LOG.md`, not HANDOFF.md.
+- The user-facing switch protocol lives in `.agent/SWITCH.md`. The copy-paste reorient prompt for the incoming agent lives in `.agent/REORIENT_PROMPT.md`.
+- If the user signals a phase boundary (e.g. "Phase 1 done"), the phase artifact in `notes/` is the durable record; HANDOFF.md just points at it.
+
+## Parallel work with the other agent
+
+The user runs Claude Code and Codex side-by-side sometimes. When you see a prompt that says "save your output to a specific filename" or "don't read the other agent's output," that's a parallel-work signal. Respect it — write only to the named file, don't peek at the sibling file. The user wants independent outputs to compare.
+
+Disagreement with the other agent is the goal in these cases. State your reasoning clearly so a diff is meaningful.
 
 ## Current focus
 
 <!-- EDIT WEEKLY. One short paragraph: what we're trying right now, what's on hold, what's broken / don't touch. -->
 
-Setting up the project skeleton. Implementing the real dataset loader in `foo/data/` and replacing the placeholder MLP is the first milestone. The sweep machinery is wired but unused.
+Setting up the project skeleton. First milestone is replacing placeholders in `src/foo/` with the real dataset loader and model.

@@ -19,8 +19,10 @@ fi
 # --- module loads ---
 # Pinned versions. Bump deliberately, not by accident.
 module purge
+module load nodejs/20.9.0-GCCcore-13.2.0
 module load Python/3.11.5-GCCcore-13.2.0
 module load CUDA/12.1.1
+export PATH="$HOME/.npm-global/bin:$PATH"
 # add other modules here as needed (e.g. cuDNN, NCCL)
 
 # --- venv ---

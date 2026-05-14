@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+
+# venv (we keep venvs OUTSIDE the repo, but just in case)
+.venv/
+venv/
+env/
+
+# Run outputs (these live on /scratch, never in repo)
+runs/
+outputs/
+wandb/
+multirun/
+.hydra/
+*.ckpt
+*.pt
+*.pth
+
+# Data (lives on /scratch or /project)
+data/
+*.h5
+*.hdf5
+*.npy
+*.npz
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*~
+
+# Secrets — never commit
+.env
+.env.local
+*.key
+*.pem
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# Reference materials (PDFs, source notebooks, large binaries) — keep on /project
+references/
+
+# Allow the requirements.lock (it's not a venv, it's a pinned record)
+!requirements.lock
